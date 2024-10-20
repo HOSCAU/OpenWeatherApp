@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Updates</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0f7fa;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #00796b;
+        }
+        #cityForm {
+            margin-bottom: 20px;
+        }
+        #cityForm input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #00796b;
+            border-radius: 5px;
+        }
+        #cityForm button {
+            padding: 10px;
+            background-color: #00796b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #cityForm button:hover {
+            background-color: #004d40;
+        }
+        #weatherResult {
+            margin-top: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .weatherItem {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #00796b;
+            border-radius: 5px;
+            background-color: #f1f8e9;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Weather Updates</h1>
+    <div id="cityForm">
+      <label for="city"></label><input type="text" id="city" placeholder="Enter city name" required>
+        <button id="addCity">Add City</button>
+    </div>
+
+    <div id="weatherResult"></div>
+
+    <script>
+        const weatherData = {};
+
+        document.getElementById('addCity').addEventListener('click', fetchWeather);
+
+        async function fetchWeather() {
+            const city = document.getElementById('city').value.trim();
+            const apiKey = 'b3a444c84bb110dbcfada5928562a9bd'; // Replace with your OpenWeatherMap API key
+
+            // Check if city input is empty
+            if (!city) {
+                alert("Please enter a city name.");
+                return;
+            }
+
+            // Check if weather data for the city is already fetched
+            if (weatherData[city]) {
+                displayWeather(city); // Display existing data
+                return;
+            }
+
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+            try {
+              const [response] = await Promise.all([fetch(url)]);
+                if (!response.ok) {
+                     new Error(`HTTP error! status: ${response.status}`);
+                }
+              let data;
+              data = await response.json();
+                weatherData[city] = data; // Store fetched data
+                displayWeather(city);
+            } catch (error) {
+                document.getElementById('weatherResult').innerHTML += `<p class="error">Error fetching weather data for ${city}: ${error.message}</p>`;
+            }
+        }
+
+        function displayWeather(city) {
+            const data = weatherData[city];
+
+            // Validate data structure
+            if (!data || !data.main || !data.weather) {
+                document.getElementById('weatherResult').innerHTML += `<p class="error">Invalid weather data for ${city}</p>`;
+                return;
+            }
+
+            // Safely extract feels_like temperature
+            let feelsLike;
+          if (data.main["feels_like"] !== undefined) {
+            feelsLike = data.main["feels_like"];
+          } else {
+            feelsLike = "N/A";
+          }
+
+            const weatherInfo = `
+                <div class="weatherItem">
+                    <h2>Weather in ${data.name}</h2>
+                    <p><strong>Main:</strong> ${data.weather[0].main}</p>
+                    <p><strong>Temperature:</strong> ${data.main.temp} °C</p>
+                    <p><strong>Feels Like:</strong> ${feelsLike} °C</p>
+                    <p><strong>Last Updated:</strong> ${new Date(data.dt * 1000).toLocaleString()}</p>
+                </div>
+            `;
+            document.getElementById('weatherResult').innerHTML += weatherInfo;
+        }
+    </script>
+
+</body>
+</html>
